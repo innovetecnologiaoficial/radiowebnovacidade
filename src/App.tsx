@@ -509,38 +509,6 @@ export default function App() {
 
           </main>
 
-          {/* DYNAMIC REGISTERED MUSIC ORDERS BANNER (SHOW RECENT SONGS REQUESTED BY CITIZENS) */}
-          {songRequests.length > 0 && (
-            <section
-              id="recent-song-marquee"
-              className="py-6 bg-gradient-to-r from-sky-950/20 to-teal-950/20 border-t border-brand-turquoise/15 overflow-hidden relative"
-            >
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-4">
-                <span className="text-[10px] font-mono font-black uppercase text-brand-turquoise shrink-0 flex items-center gap-1.5 bg-black/40 border border-brand-turquoise/20 px-3 py-1 rounded-full">
-                  <Sparkles className="w-4 h-4 text-brand-orange" />
-                  Mural de Pedidos
-                </span>
-                
-                {/* Scrolling requested list horizontal viewport */}
-                <div className="flex-1 overflow-x-auto no-scrollbar flex items-center gap-6 py-1 whitespace-nowrap scroll-smooth">
-                  {songRequests.map((req) => (
-                    <div
-                      key={req.id}
-                      className="inline-flex items-center gap-2 bg-[#030e1d]/50 border border-brand-turquoise/15 py-1.5 px-4 rounded-xl text-xs shrink-0 select-none hover:border-brand-turquoise/20 transition-colors"
-                    >
-                      <span className="text-gray-400 font-medium">
-                        <strong className="text-white font-semibold">{req.name}</strong> ({req.city}) pediu:
-                      </span>
-                      <span className="text-brand-turquoise font-bold font-mono">
-                        {req.song} - {req.artist}
-                      </span>
-                      <span className="text-xs text-gray-500">[{req.timestamp}]</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-          )}
 
           {/* FOOTER SECTION (Section 6) */}
           <Footer onOpenRequestModal={() => setIsRequestModalOpen(true)} />
