@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { BookOpen, Calendar, Clock, User, ArrowRight, Eye, X, Share2, CornerDownRight, ExternalLink, Megaphone } from "lucide-react";
-import { NEWS } from "../data";
 import { NewsItem } from "../types";
 
 // Helper to decode XML/HTML entities cleanly in current environment
@@ -264,7 +263,7 @@ function parseRSS(xmlText: string): NewsItem[] {
 }
 
 export default function NewsSection() {
-  const [newsList, setNewsList] = useState<NewsItem[]>(NEWS);
+  const [newsList, setNewsList] = useState<NewsItem[]>([]);
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [modalCopied, setModalCopied] = useState<boolean>(false);
@@ -285,15 +284,63 @@ export default function NewsSection() {
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
           xmlText = await response.text();
           // Verifica se o texto retornado não é um HTML (Erro 404 típico de hospedagem estática)
-          if (xmlText.trim().toLowerCase().startsWith("<!doctype html>")) {
+          if (xmlText.trim().toLowerCase().startsWith("<!doctype html>") || xmlText.trim().toLowerCase().startsWith("<html")) {
             throw new Error("Proxy local não encontrado (Hospedagem estática)");
           }
         } catch (localErr) {
-          console.warn("Proxy local não disponível. Usando proxy público para CORS...");
-          // 2. Se a hospedagem for estática (cPanel, Vercel, HostGator), usa o allOrigins para burlar o CORS
-          const fallbackResponse = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent('https://www.vitrinedosul.com.br/rss.xml')}&t=${Date.now()}`);
-          if (!fallbackResponse.ok) throw new Error(`Fallback HTTP ${fallbackResponse.status}`);
-          xmlText = await fallbackResponse.text();
+          console.warn("Proxy local não disponível. Tentando rss2json (CORS Proxy)...");
+          try {
+            // 2. Fallback robusto usando API rss2json (Retorna JSON limpo)
+            const jsonResponse = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent('https://www.vitrinedosul.com.br/rss.xml')}&t=${Date.now()}`);
+            if (!jsonResponse.ok) throw new Error(`RSS2JSON HTTP ${jsonResponse.status}`);
+            const data = await jsonResponse.json();
+            
+            if (data.status === "ok" && data.items && data.items.length > 0) {
+              if (active) {
+                const parsedFromJson = data.items.map((item: any, _idx: number) => {
+                  let formattedDate = "Recentemente";
+                  try {
+                    const d = new Date(item.pubDate);
+                    if (!isNaN(d.getTime())) {
+                      formattedDate = d.toLocaleDateString("pt-BR", {
+                        day: "2-digit", month: "short", year: "numeric"
+                      });
+                    }
+                  } catch (e) {}
+
+                  let snippet = (item.description || item.content || "")
+                    .replace(/<[^>]*>/g, "")
+                    .replace(/\s+/g, " ")
+                    .trim()
+                    .substring(0, 150) + "...";
+
+                  const imageUrl = item.enclosure?.link || item.thumbnail || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&auto=format&fit=crop&q=60";
+                  
+                  return {
+                    id: Math.random().toString(36).substr(2, 9),
+                    title: item.title,
+                    snippet: snippet,
+                    date: formattedDate,
+                    reads: Math.floor(Math.random() * 200) + 120,
+                    image: imageUrl,
+                    url: item.link
+                  };
+                });
+                
+                setNewsList(parsedFromJson);
+                setNewsError(null);
+                setError(null);
+                setIsLoading(false);
+                return; // Encerrar aqui se o JSON tiver funcionado perfeitamente
+              }
+            }
+          } catch (jsonErr) {
+            console.warn("RSS2JSON falhou, tentando fallback bruto (allorigins):", jsonErr);
+            // 3. Fallback final bruto (HTML scraper/XML proxy)
+            const fallbackResponse = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent('https://www.vitrinedosul.com.br/rss.xml')}&t=${Date.now()}`);
+            if (!fallbackResponse.ok) throw new Error(`Fallback HTTP ${fallbackResponse.status}`);
+            xmlText = await fallbackResponse.text();
+          }
         }
 
         (window as any).__DEBUG_XML = xmlText;
@@ -307,12 +354,12 @@ export default function NewsSection() {
           }
         }
       } catch (err: any) {
-        console.warn("Failed to fetch RSS news, fallback to local archive:", err);
+        console.warn("Failed to fetch RSS news:", err);
         console.error("DEBUG XML_TEXT:", (window as any).__DEBUG_XML);
         if (active) {
-          // Soft fallback to default predefined news
-          setNewsList(NEWS);
-          // Set error state so the header badge shows Offline without prompting the ugly big alert
+          // Clear news to avoid showing mock news
+          setNewsList([]);
+          // Set error state
           setError("offline");
         }
       } finally {
@@ -355,7 +402,7 @@ export default function NewsSection() {
                 </span>
               ) : error ? (
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[8px] font-bold font-mono tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/25 ml-1.5">
-                  Offline (Pre-carregado)
+                  Offline
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[8px] font-bold font-mono tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 ml-1.5">
@@ -391,16 +438,17 @@ export default function NewsSection() {
         </div>
 
         {/* Modern Bento Grid News Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {newsList.slice(0, visibleCount).map((item, index) => (
-            <motion.div
-              key={item.id}
-              className="bg-[#030e1d]/85 rounded-2xl overflow-hidden border border-[#0A5FA8]/20 hover:border-brand-turquoise/40 transition-all duration-300 flex flex-col group h-full shadow-lg"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-            >
+        {newsList.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {newsList.slice(0, visibleCount).map((item, index) => (
+              <motion.div
+                key={item.id}
+                className="bg-[#030e1d]/85 rounded-2xl overflow-hidden border border-[#0A5FA8]/20 hover:border-brand-turquoise/40 transition-all duration-300 flex flex-col group h-full shadow-lg"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+              >
               {/* Picture view */}
               <div className="relative h-56 overflow-hidden bg-black shrink-0">
                 <img
@@ -465,8 +513,14 @@ export default function NewsSection() {
                 </div>
               </div>
             </motion.div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : !isLoading && error ? (
+          <div className="flex flex-col items-center justify-center py-20 px-4 text-center border border-dashed border-white/10 rounded-2xl bg-white/5">
+            <p className="text-gray-400 font-medium mb-2">Não foi possível carregar as notícias mais recentes no momento.</p>
+            <span className="text-xs text-gray-500 font-mono">Tente recarregar a página para tentar novamente.</span>
+          </div>
+        ) : null}
 
         {/* Expand / Collapse News Trigger */}
         {newsList.length > visibleCount && (
