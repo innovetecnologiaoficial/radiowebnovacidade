@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Catch-all safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions for validation
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    
+    function incoming() { 
+      return request.resource.data; 
+    }
+    
+    function existing() { 
+      return resource.data; 
+    }
+
+    // Song Request Validator Blueprint (the strict schema gate)
+    function isValidSongRequest(data) {
+      return data.keys().hasAll(['name', 'song', 'artist', 'city', 'message', 'timestamp', 'createdAt'])
+        && data.keys().size() == 7
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 80
+        && data.song is string && data.song.size() > 0 && data.song.size() <= 120
+        && data.artist is string && data.artist.size() > 0 && data.artist.size() <= 120
+        && data.city is string && data.city.size() <= 80
+        && data.message is string && data.message.size() <= 300
+        && data.timestamp is string && data.timestamp.size() <= 10
+        && data.createdAt == request.time;
+    }
+
+    // Collection Rules
+    match /song_requests/{requestId} {
+      // Validate document path ID poisoning
+      allow get: if isValidId(requestId);
+      
+      // Publicly viewable list of song requests for the marquee mural
+      allow list: if true;
+
+      // Allow any visitor to request a song, but validate payload thoroughly
+      allow create: if isValidId(requestId) && isValidSongRequest(incoming());
+      
+      // Pedidos are immutable once written; updates or deletes are completely blocked
+      allow update, delete: if false;
+    }
+  }
+}

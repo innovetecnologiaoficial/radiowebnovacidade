@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Radio, Volume2, Sparkles, MessageCircleCode, ArrowDown, Mic, Calendar, Megaphone } from "lucide-react";
+import { collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from "firebase/firestore";
+import { db, handleFirestoreError, OperationType, testConnection } from "./firebase";
 import { CHANNELS, PROGRAMS } from "./data";
 import { ChannelItem, ProgramItem, SongRequest } from "./types";
 
@@ -56,6 +58,7 @@ export default function App() {
   };
 
   useEffect(() => {
+    testConnection();
     evaluateCurrentShow();
     const interval = setInterval(evaluateCurrentShow, 60000); // Check every minute
     return () => clearInterval(interval);
@@ -182,14 +185,67 @@ export default function App() {
     setIsMuted((prev) => !prev);
   };
 
+  // Listen for song requests from Firestore
+  useEffect(() => {
+    const q = query(
+      collection(db, "song_requests"),
+      orderBy("createdAt", "desc"),
+      limit(20)
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const reqs: SongRequest[] = [];
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          reqs.push({
+            id: doc.id,
+            name: data.name || "",
+            city: data.city || "",
+            song: data.song || "",
+            artist: data.artist || "",
+            message: data.message || "",
+            timestamp: data.timestamp || ""
+          });
+        });
+        setSongRequests(reqs);
+      },
+      (error) => {
+        console.error("Error fetching song requests: ", error);
+        handleFirestoreError(error, OperationType.LIST, "song_requests");
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
   // Submit song request
-  const handleSongRequestSubmit = (request: Omit<SongRequest, "id" | "timestamp">) => {
+  const handleSongRequestSubmit = async (request: Omit<SongRequest, "id" | "timestamp">) => {
+    const timestampStr = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    
+    // Fallback optimistic update just in case they are offline
     const newRequest: SongRequest = {
       ...request,
       id: `request-${Date.now()}`,
-      timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+      timestamp: timestampStr
     };
     setSongRequests((prev) => [newRequest, ...prev]);
+
+    try {
+      await addDoc(collection(db, "song_requests"), {
+        name: request.name,
+        city: request.city || "Ouvinte",
+        song: request.song,
+        artist: request.artist,
+        message: request.message || "Enviado via WhatsApp",
+        timestamp: timestampStr,
+        createdAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.error("Failed to add song request to Firestore: ", error);
+      handleFirestoreError(error, OperationType.CREATE, "song_requests");
+    }
   };
 
   const scrollPlayNow = () => {

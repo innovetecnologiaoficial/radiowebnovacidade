@@ -4,29 +4,59 @@ import { BookOpen, Calendar, Clock, User, ArrowRight, Eye, X, Share2, CornerDown
 import { NEWS } from "../data";
 import { NewsItem } from "../types";
 
-// Dynamic RSS XML Parser
-function parseRSS(xmlText: string): NewsItem[] {
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-  const items = xmlDoc.getElementsByTagName("item");
-  const result: NewsItem[] = [];
+// Helper to decode XML/HTML entities cleanly in current environment
+function decodeHTMLEntities(text: string): string {
+  if (!text) return "";
+  if (typeof document === "undefined") {
+    // Server-side/Node context basic character mapper
+    return text
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'")
+      .replace(/&#39;/g, "'")
+      .replace(/&iacute;/g, "í")
+      .replace(/&aacute;/g, "á")
+      .replace(/&oacute;/g, "ó")
+      .replace(/&uacute;/g, "ú")
+      .replace(/&eacute;/g, "é")
+      .replace(/&atilde;/g, "ã")
+      .replace(/&otilde;/g, "õ")
+      .replace(/&ccedil;/g, "ç");
+  }
+  try {
+    const textArea = document.createElement("textarea");
+    textArea.innerHTML = text;
+    return textArea.value;
+  } catch (e) {
+    return text;
+  }
+}
 
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
+// Robust fallback parser when native browser XML parsing encounters issues
+function parseRSSRegexFallback(xmlText: string): NewsItem[] {
+  const result: NewsItem[] = [];
+  const itemMatches = xmlText.match(/<item>([\s\S]*?)<\/item>/g) || [];
+  
+  for (let i = 0; i < itemMatches.length; i++) {
+    const itemXml = itemMatches[i];
     
-    const getTagValue = (tagName: string): string => {
-      const el = item.getElementsByTagName(tagName)[0];
-      return el ? el.textContent || "" : "";
+    const getTag = (tag: string): string => {
+      const match = itemXml.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\/${tag}>`, 'i'));
+      if (match && match[1]) {
+        return match[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").trim();
+      }
+      return "";
     };
 
-    const title = getTagValue("title") || "Sem Título";
-    const link = getTagValue("link") || "https://www.vitrinedosul.com.br";
-    const description = getTagValue("description") || "";
-    const category = getTagValue("category") || "Portal";
-    const author = getTagValue("author") || getTagValue("dc:creator") || "Vitrine do Sul";
-    const pubDate = getTagValue("pubDate");
-    
-    // Format Date beautifully
+    const title = getTag("title") || "Sem Título";
+    const link = getTag("link") || "https://www.vitrinedosul.com.br";
+    const description = getTag("description") || getTag("content:encoded") || "";
+    const category = getTag("category") || "Notícias";
+    const author = getTag("author") || getTag("dc:creator") || "Vitrine do Sul";
+    const pubDate = getTag("pubDate");
+
     let formattedDate = pubDate;
     try {
       if (pubDate) {
@@ -39,73 +69,56 @@ function parseRSS(xmlText: string): NewsItem[] {
           });
         }
       }
-    } catch (e) {
-      // safe fallback
-    }
+    } catch (e) {}
 
-    // Read counter simulation
-    const reads = Math.floor(Math.random() * 200) + 50;
+    const reads = Math.floor(Math.random() * 200) + 120;
+    
+    const decodedTitle = decodeHTMLEntities(title);
+    const decodedDesc = decodeHTMLEntities(description);
 
-    // Sanitize snippet by removing any HTML markup
-    let snippet = description
-      .replace(/<[^>]*>/g, "") // remove HTML elements
-      .replace(/&nbsp;/g, " ")
+    let snippet = decodedDesc
+      .replace(/<[^>]*>/g, "")
+      .replace(/\s+/g, " ")
       .trim();
     if (snippet.length > 150) {
       snippet = snippet.substring(0, 147) + "...";
     }
 
-    // Content: full description sanitized
-    const content = description.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim() || "Consulte mais detalhes no portal de notícias.";
+    const content = decodedDesc
+      .replace(/<[^>]*>/g, "")
+      .replace(/\s+/g, " ")
+      .trim() || "Consulte mais detalhes no portal de notícias.";
 
-    // Image Extraction
+    // Image extraction from enclosure or desc
     let image = "";
-    
-    // 1. Check enclosure tag
-    const enclosure = item.getElementsByTagName("enclosure")[0];
-    if (enclosure) {
-      image = enclosure.getAttribute("url") || "";
-    }
-    
-    // 2. Check media:content or media:thumbnail
-    if (!image) {
-      const mediaContent = item.getElementsByTagName("media:content")[0];
-      if (mediaContent) {
-        image = mediaContent.getAttribute("url") || "";
-      }
+    const enclosureMatch = itemXml.match(/<enclosure[^>]+url=["']([^"']+)["']/i);
+    if (enclosureMatch && enclosureMatch[1]) {
+      image = enclosureMatch[1];
     }
     
     if (!image) {
-      const mediaThumbnail = item.getElementsByTagName("media:thumbnail")[0];
-      if (mediaThumbnail) {
-        image = mediaThumbnail.getAttribute("url") || "";
-      }
-    }
-
-    // 3. Check description for standard img tag src
-    if (!image && description) {
       const imgMatch = description.match(/<img[^>]+src=["']([^"']+)["']/i);
       if (imgMatch && imgMatch[1]) {
         image = imgMatch[1];
       }
     }
 
-    // Default high-quality fallbacks
     const defaultImages = [
-      "https://images.unsplash.com/photo-1545167622-3a6ac756afa4?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=80"
+      "https://str1.lnmimg.net/img/2026/02/02/92c154f7c47e6848a26cef9cfe740581.webp",
+      "https://str1.lnmimg.net/img/2026/05/24/cd5b76f1f575f92a63bf99deae8d7769.webp",
+      "https://www.vitrinedosul.com.br/images/noticias/1953/fc5aca7dff4afa5eec2a5887e2344bce.webp"
     ];
 
     if (!image || !image.startsWith("http")) {
       image = defaultImages[i % defaultImages.length];
     }
 
-    const guid = getTagValue("guid") || link || `news-${i}-${Date.now()}`;
+    const guidMatch = itemXml.match(/<guid[^>]*>([\s\S]*?)<\/guid>/i);
+    const guid = guidMatch ? guidMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").trim() : (link || `news-${i}-${Date.now()}`);
 
     result.push({
       id: guid,
-      title,
+      title: decodedTitle,
       category,
       snippet,
       content,
@@ -116,8 +129,138 @@ function parseRSS(xmlText: string): NewsItem[] {
       link
     });
   }
-
   return result;
+}
+
+// Dynamic RSS XML Parser
+function parseRSS(xmlText: string): NewsItem[] {
+  try {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+    
+    // Fallback if browser parser encounters error
+    const parserError = xmlDoc.getElementsByTagName("parsererror");
+    if (parserError.length > 0) {
+      console.warn("DOMParser error found. Relying on Regex Parser fallback.");
+      return parseRSSRegexFallback(xmlText);
+    }
+
+    const items = xmlDoc.getElementsByTagName("item");
+    const result: NewsItem[] = [];
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      
+      const getTagValue = (tagName: string): string => {
+        const el = item.getElementsByTagName(tagName)[0];
+        return el ? el.textContent || "" : "";
+      };
+
+      const title = getTagValue("title") || "Sem Título";
+      const link = getTagValue("link") || "https://www.vitrinedosul.com.br";
+      const description = getTagValue("description") || getTagValue("content:encoded") || "";
+      const category = getTagValue("category") || "Notícias";
+      const author = getTagValue("author") || getTagValue("dc:creator") || "Vitrine do Sul";
+      const pubDate = getTagValue("pubDate");
+      
+      let formattedDate = pubDate;
+      try {
+        if (pubDate) {
+          const d = new Date(pubDate);
+          if (!isNaN(d.getTime())) {
+            formattedDate = d.toLocaleDateString("pt-BR", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric"
+            });
+          }
+        }
+      } catch (e) {}
+
+      const reads = Math.floor(Math.random() * 200) + 120;
+      
+      const decodedTitle = decodeHTMLEntities(title);
+      const decodedDesc = decodeHTMLEntities(description);
+
+      let snippet = decodedDesc
+        .replace(/<[^>]*>/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (snippet.length > 150) {
+        snippet = snippet.substring(0, 147) + "...";
+      }
+
+      const content = decodedDesc
+        .replace(/<[^>]*>/g, "")
+        .replace(/\s+/g, " ")
+        .trim() || "Consulte mais detalhes no portal de notícias.";
+
+      let image = "";
+      
+      // 1. Enclosure
+      const enclosure = item.getElementsByTagName("enclosure")[0];
+      if (enclosure) {
+        image = enclosure.getAttribute("url") || "";
+      }
+      
+      // 2. Media Tag
+      if (!image) {
+        const mediaContent = item.getElementsByTagName("media:content")[0];
+        if (mediaContent) {
+          image = mediaContent.getAttribute("url") || "";
+        }
+      }
+      
+      if (!image) {
+        const mediaThumbnail = item.getElementsByTagName("media:thumbnail")[0];
+        if (mediaThumbnail) {
+          image = mediaThumbnail.getAttribute("url") || "";
+        }
+      }
+
+      // 3. Img tag in description
+      if (!image && description) {
+        const imgMatch = description.match(/<img[^>]+src=["']([^"']+)["']/i);
+        if (imgMatch && imgMatch[1]) {
+          image = imgMatch[1];
+        }
+      }
+
+      const defaultImages = [
+        "https://str1.lnmimg.net/img/2026/02/02/92c154f7c47e6848a26cef9cfe740581.webp",
+        "https://str1.lnmimg.net/img/2026/05/24/cd5b76f1f575f92a63bf99deae8d7769.webp",
+        "https://www.vitrinedosul.com.br/images/noticias/1953/fc5aca7dff4afa5eec2a5887e2344bce.webp"
+      ];
+
+      if (!image || !image.startsWith("http")) {
+        image = defaultImages[i % defaultImages.length];
+      }
+
+      const guid = getTagValue("guid") || link || `news-${i}-${Date.now()}`;
+
+      result.push({
+        id: guid,
+        title: decodedTitle,
+        category,
+        snippet,
+        content,
+        date: formattedDate || "Recentemente",
+        image,
+        author,
+        reads,
+        link
+      });
+    }
+
+    if (result.length === 0) {
+      return parseRSSRegexFallback(xmlText);
+    }
+
+    return result;
+  } catch (error) {
+    console.error("DOMParser parse error, calling regex fallback", error);
+    return parseRSSRegexFallback(xmlText);
+  }
 }
 
 export default function NewsSection() {
@@ -139,6 +282,7 @@ export default function NewsSection() {
           throw new Error(`HTTP error ${response.status}`);
         }
         const xmlText = await response.text();
+        (window as any).__DEBUG_XML = xmlText;
         if (active) {
           const parsed = parseRSS(xmlText);
           if (parsed.length > 0) {
@@ -150,10 +294,12 @@ export default function NewsSection() {
         }
       } catch (err: any) {
         console.warn("Failed to fetch RSS news, fallback to local archive:", err);
+        console.error("DEBUG XML_TEXT:", (window as any).__DEBUG_XML);
         if (active) {
           // Soft fallback to default predefined news
           setNewsList(NEWS);
-          setError("Exibindo arquivo temporário de notícias. Não foi possível carregar o feed em tempo real.");
+          // Set error state so the header badge shows Offline without prompting the ugly big alert
+          setError("offline");
         }
       } finally {
         if (active) {
@@ -186,9 +332,22 @@ export default function NewsSection() {
         {/* News Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
           <div className="text-left">
-            <span className="text-brand-turquoise uppercase font-mono text-xs tracking-widest font-black flex items-center gap-1.5 mb-2">
+            <span className="text-brand-turquoise uppercase font-mono text-xs tracking-widest font-black flex items-center gap-1.5 mb-2 flex-wrap sm:flex-nowrap">
               <BookOpen className="w-4 h-4 text-brand-turquoise" />
               Notícias Vitrine do Sul
+              {isLoading ? (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[8px] font-bold font-mono tracking-wider bg-brand-turquoise/15 text-brand-turquoise border border-brand-turquoise/20 animate-pulse ml-1.5">
+                  Sincronizando...
+                </span>
+              ) : error ? (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[8px] font-bold font-mono tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/25 ml-1.5">
+                  Offline (Pre-carregado)
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[8px] font-bold font-mono tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 ml-1.5">
+                  Sincronizado
+                </span>
+              )}
             </span>
             <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight uppercase">
               PORTAL <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-turquoise to-brand-orange">VITRINE DO SUL</span>
@@ -216,25 +375,6 @@ export default function NewsSection() {
             </a>
           </div>
         </div>
-
-        {/* Loading Indicator */}
-        {isLoading && (
-          <div className="flex flex-col items-center justify-center py-12 gap-3">
-            <div className="flex gap-2">
-              <span className="w-3.5 h-3.5 rounded-full bg-brand-turquoise animate-bounce" />
-              <span className="w-3.5 h-3.5 rounded-full bg-brand-turquoise animate-bounce [animation-delay:0.15s]" />
-              <span className="w-3.5 h-3.5 rounded-full bg-brand-turquoise animate-bounce [animation-delay:0.3s]" />
-            </div>
-            <span className="text-xs text-gray-400 font-mono tracking-widest uppercase">Buscando notícias no RSS...</span>
-          </div>
-        )}
-
-        {/* Informative Error Notice */}
-        {error && !isLoading && (
-          <div className="mb-8 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs text-center max-w-2xl mx-auto font-mono">
-            {error}
-          </div>
-        )}
 
         {/* Modern Bento Grid News Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

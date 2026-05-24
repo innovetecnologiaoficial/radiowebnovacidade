@@ -74,7 +74,7 @@ export const NEWS: NewsItem[] = [
     snippet: "Com recorde histórico de público, o evento oficial trouxe shows nacionais gratuitos na beira-mar, gastronomia pesqueira típica e feira artesanal regional.",
     content: "O lançamento oficial da temporada em Balneário Rincão iniciou de forma incrível. Estima-se que mais de 50 mil pessoas circularam pelos deques de acesso e palcos na orla durante todo o fim de semana. Além de incentivar o turismo, a iniciativa oferece oficinas culturais locais e feira gastronômica de peixes e frutos do mar, valorizando a pesca artesanal e pescadores de Balneário Rincão. O calendário prossegue com várias atrações esportivas e musicais no calçadão das praias.",
     date: "24 de Maio, 2026",
-    image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=60",
+    image: "https://str1.lnmimg.net/img/2026/02/02/92c154f7c47e6848a26cef9cfe740581.webp",
     author: "Redação Vitrine do Sul",
     reads: 1420
   },
@@ -85,7 +85,7 @@ export const NEWS: NewsItem[] = [
     snippet: "A tradicional disputa na areia atraiu grandes torcidas. As semifinais foram marcadas por viradas espetaculares e gols emocionantes nos minutos finais.",
     content: "O clássico praiano de ontem nas areias do Balneário Rincão entrará para a história do desporto regional. Sob sol forte e calor intenso, as equipes do Rincão FC e União Sul travaram um duelo tático excepcional. O time da União Sul abriu o placar no primeiro período da partida. Contudo, guiado pelos gritos de incentivo da torcida, o Rincão FC buscou o empate heroico e converteu a virada espetacular nos segundos finais garantindo vaga na disputa da grande final na praia do Rincão.",
     date: "23 de Maio, 2026",
-    image: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800&auto=format&fit=crop&q=60",
+    image: "https://str1.lnmimg.net/img/2026/05/24/cd5b76f1f575f92a63bf99deae8d7769.webp",
     author: "Marcos Silva, Portal Vitrine do Sul",
     reads: 2105
   },
@@ -96,7 +96,7 @@ export const NEWS: NewsItem[] = [
     snippet: "Governo municipal concluiu as obras da principal via de orla turística. Projeto destaca-se pela preservação de dunas, novos acessos de madeira e segurança ampliada.",
     content: "Balneário Rincão comemora a entrega formal do novo trecho revitalizado de sua calçada Beira-Mar. Com ciclovia totalmente demarcada, passagens de madeira suspensas que protegem e preservam a vegetação de restinga e dunas locais, além de modernos refletores em tecnologia LED solar que fornecem maior segurança para caminhadas noturnas. Moradores e turistas elogiaram muito a infraestrutura que eleva o potencial turístico da praia neste ano em SC.",
     date: "22 de Maio, 2026",
-    image: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=800&auto=format&fit=crop&q=60",
+    image: "https://www.vitrinedosul.com.br/images/noticias/1953/fc5aca7dff4afa5eec2a5887e2344bce.webp",
     author: "Gabriela Vasconcellos",
     reads: 1890
   }
@@ -109,7 +109,7 @@ export const CONTACT_INFO = {
   website: "https://www.radiowebnovacidade.com.br/",
   socials: {
     instagram: "https://instagram.com",
-    facebook: "https://facebook.com",
+    facebook: "https://www.facebook.com/radiowebnovacidade/",
     youtube: "https://youtube.com",
     whatsapp: "https://wa.me/5548996827641?text=Ol%C3%A1%20R%C3%A1dio%20Nova%20Cidade!%20Estou%20ouvindo%20pelo%20site%20e%20gostaria%20de%20pedir%20uma%20m%C3%BAsica."
   }

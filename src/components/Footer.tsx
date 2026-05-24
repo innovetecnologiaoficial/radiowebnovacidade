@@ -27,46 +27,21 @@ export default function Footer({ onOpenRequestModal }: FooterProps) {
           
           {/* COLUMN 1: GRAND LOGO SHOWCASE PANEL (Emphasis on Logo) */}
           <div className="lg:col-span-5 flex flex-col items-start text-left">
-            {/* Logo Spotlight Container */}
-            <div className="relative group w-full mb-6">
-              {/* Backside Gradient Radial Glow */}
-              <div className="absolute inset-0 bg-gradient-to-r from-brand-turquoise/20 to-brand-blue-ocean/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-80" />
-              
-              {/* Glassmorphic Badge Frame */}
-              <div className="relative p-6 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-md flex flex-col sm:flex-row items-center gap-5 overflow-hidden transition-all duration-300 group-hover:border-brand-turquoise/30 group-hover:bg-white/[0.04]">
-                {/* Visual Accent Tech Corners */}
-                <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-brand-turquoise/55 rounded-tl" />
-                <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-brand-orange/55 rounded-br" />
-                
-                {/* Amplified Logo Base */}
-                <div className="relative shrink-0 flex items-center justify-center bg-white/5 rounded-full p-2 border border-white/10 shadow-inner transition-transform duration-500 group-hover:scale-105">
-                  <img 
-                    src="https://www.radiowebnovacidade.com.br/imagens/logobg.png" 
-                    alt="Logo Rádio Web Nova Cidade" 
-                    className="h-24 w-24 object-contain brightness-110 contrast-105 drop-shadow-[0_0_15px_rgba(30,203,225,0.45)]"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
-
-                {/* Brand Titles with Modern Typography */}
-                <div className="text-center sm:text-left select-none">
-                  <div className="flex items-center justify-center sm:justify-start gap-1.5 text-brand-orange text-[10px] tracking-widest font-mono font-black uppercase mb-1">
-                    <Sparkles className="w-3.5 h-3.5 animate-pulse text-brand-gold shrink-0" />
-                    <span>LITORAL EM SINTONIA</span>
-                  </div>
-                  <h3 className="text-white text-xl font-black tracking-tight uppercase leading-tight group-hover:text-brand-turquoise transition-colors">
-                    RÁDIO WEB
-                  </h3>
-                  <p className="text-transparent bg-clip-text bg-gradient-to-r from-white via-brand-cyan-light to-brand-turquoise text-sm font-semibold tracking-wider font-mono uppercase">
-                    NOVA CIDADE
-                  </p>
-                  
-                  {/* Digital status badge */}
-                  <div className="mt-2.5 inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-[10px] text-emerald-400 font-mono tracking-wider font-bold">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>ESTÚDIO DIGITAL TRANSMITINDO</span>
-                  </div>
-                </div>
+            {/* Simple logo and title presentation */}
+            <div className="flex items-center gap-4 mb-6 select-none">
+              <img 
+                src="https://www.radiowebnovacidade.com.br/imagens/logobg.png" 
+                alt="Logo Rádio Web Nova Cidade" 
+                className="h-16 w-16 object-contain brightness-110 contrast-105 drop-shadow-[0_4px_12px_rgba(30,203,225,0.25)]"
+                referrerPolicy="no-referrer"
+              />
+              <div className="text-left">
+                <h3 className="text-white text-lg font-black tracking-tight uppercase leading-tight">
+                  RÁDIO WEB
+                </h3>
+                <p className="text-brand-turquoise text-sm font-semibold tracking-wider font-mono uppercase">
+                  NOVA CIDADE
+                </p>
               </div>
             </div>
             

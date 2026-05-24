@@ -1,0 +1,51 @@
+{
+  "entities": {
+    "song_request": {
+      "title": "Song Request",
+      "description": "A musical request requested by radio listeners",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the request"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the listener"
+        },
+        "city": {
+          "type": "string",
+          "description": "City or neighborhood of the listener"
+        },
+        "song": {
+          "type": "string",
+          "description": "Requested song title"
+        },
+        "artist": {
+          "type": "string",
+          "description": "Artist or performer name"
+        },
+        "message": {
+          "type": "string",
+          "description": "Optional custom message or greeting"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Current clock time"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Temporal timestamp parameter"
+        }
+      },
+      "required": ["name", "song", "artist"]
+    }
+  },
+  "firestore": {
+    "/song_requests/{requestId}": {
+      "schema": "song_request",
+      "description": "Collection of all dynamic song requests from listeners"
+    }
+  }
+}
