@@ -257,17 +257,16 @@ export default function App() {
     <div className="min-h-screen bg-[#070707] text-white font-sans relative antialiased flex flex-col justify-between selection:bg-brand-turquoise selection:text-neutral-dark">
       
       {/* Dynamic Splash Loadscreen */}
-      <Loader onComplete={() => setIsLoaderActive(false)} />
+      {isLoaderActive && <Loader onComplete={() => setIsLoaderActive(false)} />}
 
-      {/* Primary layout content (only rendered fully when loader ends) */}
-      {!isLoaderActive && (
-        <motion.div
-          id="app-layout"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
-          className="flex flex-col min-h-screen"
-        >
+      {/* Primary layout content (rendered immediately for SEO) */}
+      <motion.div
+        id="app-layout"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, ease: "easeOut", delay: 0 }}
+        className="flex flex-col min-h-screen"
+      >
           {/* Transparent Glass Navbar */}
           <Header onPlayTrigger={scrollPlayNow} isPlaying={isPlaying} />
 
@@ -284,6 +283,8 @@ export default function App() {
                 <img
                   src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600&auto=format&fit=crop&q=80"
                   alt="Praia Paradisíaca ao Pôr do Sol"
+                  loading="eager"
+                  fetchPriority="high"
                   className="w-full h-full object-cover opacity-80 filter scale-102"
                   referrerPolicy="no-referrer"
                 />
@@ -307,6 +308,8 @@ export default function App() {
                   <img
                     src="https://www.radiowebnovacidade.com.br/imagens/logobg.png"
                     alt="Logo Rádio Web Nova Cidade"
+                    loading="eager"
+                    fetchPriority="high"
                     className="h-28 sm:h-36 md:h-44 w-auto object-contain drop-shadow-[0_8px_32px_rgba(30,203,225,0.45)] hover:scale-103 transition-transform duration-300"
                     referrerPolicy="no-referrer"
                   />
@@ -401,6 +404,7 @@ export default function App() {
                         <img 
                           src="https://radiowebnovacidade.com.br/imagens/toninho.png" 
                           alt="Locutor Toninho Santos - Rádio Web Nova Cidade" 
+                          loading="lazy"
                           className="w-full h-auto max-h-[420px] object-contain rounded-2xl drop-shadow-[0_10px_25px_rgba(30,203,225,0.2)] hover:scale-[1.02] transition-transform duration-500"
                           referrerPolicy="no-referrer"
                         />
@@ -562,7 +566,6 @@ export default function App() {
           />
 
         </motion.div>
-      )}
     </div>
   );
 }

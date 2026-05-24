@@ -17,15 +17,14 @@ export default function Loader({ onComplete }: LoaderProps) {
           clearInterval(timer);
           setTimeout(() => {
             setIsExiting(true);
-            setTimeout(onComplete, 800); // Wait for exit animation
-          }, 400);
+            setTimeout(onComplete, 300); // reduced from 800 to 300
+          }, 100); // reduced from 400 to 100
           return 100;
         }
-        // Quadratic sort of speed-up
-        const step = Math.max(1, Math.floor((100 - prev) * 0.15) + Math.floor(Math.random() * 5));
+        const step = Math.max(1, Math.floor((100 - prev) * 0.4) + Math.floor(Math.random() * 15));
         return Math.min(100, prev + step);
       });
-    }, 80);
+    }, 20); // reduced from 80 to 20
 
     return () => clearInterval(timer);
   }, [onComplete]);
@@ -38,7 +37,7 @@ export default function Loader({ onComplete }: LoaderProps) {
           className="fixed inset-0 bg-[#031326] z-50 flex flex-col items-center justify-center overflow-hidden"
           initial={{ opacity: 1 }}
           exit={{ opacity: 0, y: -40, scale: 0.98 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
         >
           {/* Decorative Background Pulsing Glow */}
           <div className="absolute w-[600px] h-[600px] rounded-full bg-radial-dim-tropical opacity-45 blur-3xl pointer-events-none" />
@@ -48,14 +47,19 @@ export default function Loader({ onComplete }: LoaderProps) {
             {/* Spinning/Pulsating Logo Frame */}
             <motion.div
               id="loader-icon-container"
-              className="relative p-6 rounded-full mb-6 glass-panel-glow neon-border-active bg-neutral-dark/80"
+              className="relative p-6 rounded-3xl mb-6 glass-panel-glow neon-border-active bg-neutral-dark/80"
               initial={{ scale: 0.6, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.1, type: "spring" }}
             >
-              <Radio className="w-16 h-16 text-brand-turquoise animate-pulse" />
+              <img 
+                src="https://www.radiowebnovacidade.com.br/imagens/logobg.png" 
+                alt="Nova Cidade Logo" 
+                className="w-24 h-auto object-contain animate-pulse"
+                referrerPolicy="no-referrer"
+              />
               {/* Outer ring */}
-              <div className="absolute inset-0 rounded-full border border-dashed border-brand-orange/40 animate-spin-slow" />
+              <div className="absolute inset-0 rounded-3xl border border-dashed border-brand-orange/40 animate-spin-slow" style={{ animationDuration: '6s' }} />
             </motion.div>
 
             {/* Brand Titles */}

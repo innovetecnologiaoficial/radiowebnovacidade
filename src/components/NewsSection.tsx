@@ -277,11 +277,25 @@ export default function NewsSection() {
     const fetchNews = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch("/api/rss");
-        if (!response.ok) {
-          throw new Error(`HTTP error ${response.status}`);
+        let xmlText = "";
+        
+        try {
+          // 1. Tenta usar o proxy local caso a hospedagem seja Full-Stack (Node.js/Express)
+          const response = await fetch(`/api/rss?t=${Date.now()}`);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          xmlText = await response.text();
+          // Verifica se o texto retornado não é um HTML (Erro 404 típico de hospedagem estática)
+          if (xmlText.trim().toLowerCase().startsWith("<!doctype html>")) {
+            throw new Error("Proxy local não encontrado (Hospedagem estática)");
+          }
+        } catch (localErr) {
+          console.warn("Proxy local não disponível. Usando proxy público para CORS...");
+          // 2. Se a hospedagem for estática (cPanel, Vercel, HostGator), usa o allOrigins para burlar o CORS
+          const fallbackResponse = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent('https://www.vitrinedosul.com.br/rss.xml')}&t=${Date.now()}`);
+          if (!fallbackResponse.ok) throw new Error(`Fallback HTTP ${fallbackResponse.status}`);
+          xmlText = await fallbackResponse.text();
         }
-        const xmlText = await response.text();
+
         (window as any).__DEBUG_XML = xmlText;
         if (active) {
           const parsed = parseRSS(xmlText);
@@ -392,6 +406,7 @@ export default function NewsSection() {
                 <img
                   src={item.image}
                   alt={item.title}
+                  loading="lazy"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80"
                   referrerPolicy="no-referrer"
                 />
@@ -494,6 +509,7 @@ export default function NewsSection() {
                 <img
                   src={selectedNews.image}
                   alt={selectedNews.title}
+                  loading="lazy"
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                 />
